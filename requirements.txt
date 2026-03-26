@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+redis[hiredis]
+asyncpg
+sqlalchemy[asyncio]
+pandas
+pyarrow
+pydantic
+pydantic-settings
+bcrypt
+numpy
