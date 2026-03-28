@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from app.core.config import settings
 
-
 @dataclass
 class TickResult:
     buy_filled: bool
@@ -12,7 +11,6 @@ class TickResult:
     net_cash_delta: float
     new_bid_queue_pos: float
     new_ask_queue_pos: float
-
 
 def process_tick(
     action_bid_level: int,
@@ -39,13 +37,13 @@ def process_tick(
 
     bid_exec_price = b_p[action_bid_level - 1]
     ask_exec_price = a_p[action_ask_level - 1]
-
-    if prev_bid_queue_pos > 0 and size > 0 and flow_per_side >= prev_bid_queue_pos:
+    
+    if prev_bid_queue_pos > 0 and size > 0 and flow_per_side >= (prev_bid_queue_pos + size):
         buy_filled = True
         inventory_delta += size
         cash_delta -= bid_exec_price * size
 
-    if prev_ask_queue_pos > 0 and size > 0 and flow_per_side >= prev_ask_queue_pos:
+    if prev_ask_queue_pos > 0 and size > 0 and flow_per_side >= (prev_ask_queue_pos + size):
         sell_filled = True
         inventory_delta -= size
         cash_delta += ask_exec_price * size
