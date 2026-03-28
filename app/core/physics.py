@@ -3,8 +3,8 @@ from app.core.config import settings
 
 @dataclass
 class TickResult:
-    buy_filled: bool
-    sell_filled: bool
+    buy_filled_amount: float
+    sell_filled_amount: float
     inventory_delta: float
     cash_delta: float
     penalty: float
@@ -27,40 +27,45 @@ def process_tick(
     trade_flow = market_data["trade_flow"]
     volatility = market_data["volatility"]
 
-    buy_filled = False
-    sell_filled = False
+    buy_filled_amount = 0.0
+    sell_filled_amount = 0.0
     cash_delta = 0.0
     inventory_delta = 0.0
 
-    # Trade flow is split evenly between hitting bids and lifting asks.
     flow_per_side = trade_flow / 2.0
 
     bid_exec_price = b_p[action_bid_level - 1]
     ask_exec_price = a_p[action_ask_level - 1]
-    
-    if prev_bid_queue_pos > 0 and size > 0 and flow_per_side >= (prev_bid_queue_pos + size):
-        buy_filled = True
-        inventory_delta += size
-        cash_delta -= bid_exec_price * size
 
-    if prev_ask_queue_pos > 0 and size > 0 and flow_per_side >= (prev_ask_queue_pos + size):
-        sell_filled = True
-        inventory_delta -= size
-        cash_delta += ask_exec_price * size
+    if size > 0:
+        # Partial fill logic for Bids
+        available_bid_flow = max(0.0, flow_per_side - prev_bid_queue_pos)
+        if available_bid_flow > 0:
+            buy_filled_amount = min(size, available_bid_flow)
+            inventory_delta += buy_filled_amount
+            cash_delta -= bid_exec_price * buy_filled_amount
+
+        # Partial fill logic for Asks
+        available_ask_flow = max(0.0, flow_per_side - prev_ask_queue_pos)
+        if available_ask_flow > 0:
+            sell_filled_amount = min(size, available_ask_flow)
+            inventory_delta -= sell_filled_amount
+            cash_delta += ask_exec_price * sell_filled_amount
 
     new_inventory = current_inventory + inventory_delta
     penalty = settings.inventory_penalty_gamma * (new_inventory ** 2) * volatility
 
     if size > 0:
-        new_bid_queue_pos = b_v[action_bid_level - 1]
-        new_ask_queue_pos = a_v[action_ask_level - 1]
+        # Sums all volume from Level 1 up to the Agent's chosen level
+        new_bid_queue_pos = sum(b_v[:action_bid_level])
+        new_ask_queue_pos = sum(a_v[:action_ask_level])
     else:
         new_bid_queue_pos = 0.0
         new_ask_queue_pos = 0.0
 
     return TickResult(
-        buy_filled=buy_filled,
-        sell_filled=sell_filled,
+        buy_filled_amount=buy_filled_amount,
+        sell_filled_amount=sell_filled_amount,
         inventory_delta=inventory_delta,
         cash_delta=cash_delta,
         penalty=penalty,

@@ -31,8 +31,8 @@ def _initial_state(mode: SessionMode) -> dict:
         "cash": settings.initial_cash,
         "inventory": 0.0,
         "total_penalty": 0.0,
-        "total_buy_fills": 0,
-        "total_sell_fills": 0,
+        "total_buy_volume": 0.0,  
+        "total_sell_volume": 0.0, 
         "bid_queue_pos": 0.0,
         "ask_queue_pos": 0.0,
     }

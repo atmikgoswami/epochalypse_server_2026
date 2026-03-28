@@ -48,8 +48,8 @@ def _current_tick_response(state: dict, current_tick: int, total_ticks: int) -> 
         cash=state["cash"],
         inventory=state["inventory"],
         penalty_this_tick=0.0,
-        buy_filled=False,
-        sell_filled=False,
+        buy_filled_amount=0.0,
+        sell_filled_amount=0.0,
         ticks_remaining=total_ticks - current_tick,
     )
 
@@ -73,8 +73,8 @@ async def local_tick(
             cash=state["cash"],
             inventory=state["inventory"],
             penalty_this_tick=0.0,
-            buy_filled=False,
-            sell_filled=False,
+            buy_filled_amount=0.0,
+            sell_filled_amount=0.0,
             ticks_remaining=total_ticks,
         )
 
@@ -100,8 +100,8 @@ async def local_tick(
             final_cash=state["cash"],
             net_profit=state["cash"] - settings.initial_cash,
             total_penalty=state["total_penalty"],
-            total_buy_fills=state["total_buy_fills"],
-            total_sell_fills=state["total_sell_fills"],
+            total_buy_volume=state["total_buy_volume"],
+            total_sell_volume=state["total_sell_volume"],
         )
         await delete_local_session(redis, body.team_id)
         return EvalCompleteResponse(message="Local simulation complete.", summary=summary)

@@ -2,7 +2,6 @@ from app.core.market_data import MarketDataStore
 from app.core.physics import process_tick
 from app.models.schemas import ActionPayload, TickMarketData, TickResponse
 
-
 def apply_action_to_state(
     state: dict,
     action: ActionPayload,
@@ -32,8 +31,8 @@ def apply_action_to_state(
     state["cash"] += result.net_cash_delta
     state["inventory"] += result.inventory_delta
     state["total_penalty"] += result.penalty
-    state["total_buy_fills"] += int(result.buy_filled)
-    state["total_sell_fills"] += int(result.sell_filled)
+    state["total_buy_volume"] += result.buy_filled_amount
+    state["total_sell_volume"] += result.sell_filled_amount
     state["bid_queue_pos"] = result.new_bid_queue_pos
     state["ask_queue_pos"] = result.new_ask_queue_pos
     state["current_tick"] = tick_index + 1
@@ -66,13 +65,12 @@ def apply_action_to_state(
         cash=state["cash"],
         inventory=state["inventory"],
         penalty_this_tick=result.penalty,
-        buy_filled=result.buy_filled,
-        sell_filled=result.sell_filled,
+        buy_filled_amount=result.buy_filled_amount,
+        sell_filled_amount=result.sell_filled_amount,
         ticks_remaining=max(0, total_ticks - state["current_tick"]),
     )
 
     return state, response
-
 
 def get_initial_tick_data(market: MarketDataStore, mode: str) -> TickMarketData:
     d = market.local_tick(0) if mode == "local" else market.eval_tick(0)

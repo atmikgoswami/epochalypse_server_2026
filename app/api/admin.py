@@ -28,8 +28,8 @@ class LeaderboardEntry(BaseModel):
     final_cash: float
     net_profit: float
     total_penalty: float
-    total_buy_fills: int
-    total_sell_fills: int
+    total_buy_volume: float  
+    total_sell_volume: float 
     ticks_completed: int
 
 
@@ -57,8 +57,8 @@ async def leaderboard(db: AsyncSession = Depends(get_db)):
             final_cash=r.final_cash,
             net_profit=r.final_cash - settings.initial_cash,
             total_penalty=r.total_penalty,
-            total_buy_fills=r.total_buy_fills,
-            total_sell_fills=r.total_sell_fills,
+            total_buy_volume=r.total_buy_volume,
+            total_sell_volume=r.total_sell_volume,
             ticks_completed=r.ticks_completed,
         )
         for i, r in enumerate(rows)

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -56,8 +56,8 @@ async def _restore_from_checkpoint(redis, db: AsyncSession, team_id: str) -> dic
             "cash": checkpoint.cash,
             "inventory": checkpoint.inventory,
             "total_penalty": checkpoint.total_penalty,
-            "total_buy_fills": checkpoint.total_buy_fills,
-            "total_sell_fills": checkpoint.total_sell_fills,
+            "total_buy_volume": checkpoint.total_buy_volume,
+            "total_sell_volume": checkpoint.total_sell_volume,
             "bid_queue_pos": checkpoint.bid_queue_pos,
             "ask_queue_pos": checkpoint.ask_queue_pos,
         }
@@ -81,14 +81,21 @@ def _current_tick_response(state: dict, current_tick: int, total_ticks: int) -> 
         cash=state["cash"],
         inventory=state["inventory"],
         penalty_this_tick=0.0,
-        buy_filled=False,
-        sell_filled=False,
+        buy_filled_amount=0.0,
+        sell_filled_amount=0.0,
         ticks_remaining=total_ticks - current_tick,
     )
 
 
 def _deadline_check():
-    if datetime.now() > datetime.fromisoformat(settings.eval_deadline):
+    deadline = datetime.fromisoformat(settings.eval_deadline)
+    
+    # If the deadline in the .env file lacks a timezone, assign UTC to it
+    if deadline.tzinfo is None:
+        deadline = deadline.replace(tzinfo=timezone.utc)
+        
+    # Compare it against the current timezone-aware UTC time
+    if datetime.now(timezone.utc) > deadline:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The evaluation window has closed. No further submissions are accepted.",
@@ -149,8 +156,8 @@ async def eval_tick(
             cash=state["cash"],
             inventory=state["inventory"],
             penalty_this_tick=0.0,
-            buy_filled=False,
-            sell_filled=False,
+            buy_filled_amount=0.0,
+            sell_filled_amount=0.0,
             ticks_remaining=total_ticks,
         )
 
@@ -172,8 +179,8 @@ async def eval_tick(
             final_cash=state["cash"],
             net_profit=state["cash"] - settings.initial_cash,
             total_penalty=state["total_penalty"],
-            total_buy_fills=state["total_buy_fills"],
-            total_sell_fills=state["total_sell_fills"],
+            total_buy_volume=state["total_buy_volume"],
+            total_sell_volume=state["total_sell_volume"],
         )
         return EvalCompleteResponse(message="Evaluation complete. Results recorded.", summary=summary)
 
